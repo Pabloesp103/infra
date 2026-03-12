@@ -1,0 +1,17 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_practica
+    ports:
+      - "27017:27017"
+    networks:
+      - microservices-net
+    volumes:
+      - mongodb_data:/data/db
+
+networks:
+  microservices-net:
+    driver: bridge
+
+volumes:
+  mongodb_data:
