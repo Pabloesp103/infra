@@ -43,6 +43,7 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/productos
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - AWS_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=admin
@@ -65,6 +66,7 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/ordenes
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - AWS_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=admin
@@ -87,11 +89,30 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/pagos
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - AWS_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=admin
       - AWS_SECRET_ACCESS_KEY=admin
       - AWS_ENDPOINT_URL=http://localstack:4566
       - JAVA_TOOL_OPTIONS=-Daws.endpointUrl=http://localstack:4566
+    networks:
+      - microservices-net
+
+  broker-message-be:
+    build: ../broker-message-be
+    ports:
+      - "8084:8084"
+    depends_on:
+      eureka-server:
+        condition: service_started
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_started
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/retry_db
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
     networks:
       - microservices-net
 
@@ -103,6 +124,54 @@ services:
       - microservices-net
     volumes:
       - mongodb_data:/data/db
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=retry_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+    ports:
+      - "5432:5432"
+    networks:
+      - microservices-net
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - microservices-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - microservices-net
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8085:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - microservices-net
 
   localstack:
     image: localstack/localstack:latest
@@ -133,3 +202,4 @@ networks:
 
 volumes:
   mongodb_data:
+  postgres_data:
