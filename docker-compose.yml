@@ -1,6 +1,6 @@
 services:
   eureka-server:
-    build: ../eurekaserver
+    build: ../Eureka-server
     ports:
       - "8761:8761"
     environment:
@@ -30,7 +30,7 @@ services:
       - microservices-net
 
   productservice:
-    build: ../productservice
+    build: ../productos-service
     ports:
       - "8081:8081"
     depends_on:
@@ -53,7 +53,7 @@ services:
       - microservices-net
 
   orderservice:
-    build: ../orderservice
+    build: ../ordenes-service
     ports:
       - "8082:8082"
     depends_on:
@@ -76,7 +76,7 @@ services:
       - microservices-net
 
   paymentservice:
-    build: ../paymentservice
+    build: ../pagos-service
     ports:
       - "8083:8083"
     depends_on:
@@ -99,7 +99,7 @@ services:
       - microservices-net
 
   broker-message-be:
-    build: ../broker-message-be
+    build: ../kafka
     ports:
       - "8084:8084"
     depends_on:
