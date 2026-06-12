@@ -196,6 +196,35 @@ services:
     networks:
       - microservices-net
 
+  frontend:
+    build: ../frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    networks:
+      - microservices-net
+
+  shippingservice:
+    build: ../envios-service
+    ports:
+      - "3003:8085"
+    depends_on:
+      eureka-server:
+        condition: service_started
+      mongodb:
+        condition: service_started
+      kafka:
+        condition: service_started
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATA_MONGODB_URI=mongodb://mongodb:27017/envios
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    networks:
+      - microservices-net
+
 networks:
   microservices-net:
     driver: bridge
